@@ -1,0 +1,21 @@
+all:
+  hosts:
+    k8s-control:
+      ansible_host: 172.16.106.43
+      ansible_user: kube
+    k8s-worker1:
+      ansible_host: 172.16.106.112
+      ansible_user: kube
+    k8s-worker2:
+      ansible_host: 172.16.106.113
+      ansible_user: kube
+
+  children:
+    k8s-control:
+      hosts:
+        k8s-control:
+    k8s-workers:
+      hosts:
+        k8s-worker1:
+        k8s-worker2:
+
