@@ -5,7 +5,7 @@ This repository offers an Ansible-based solution for provisioning Kubernetes clu
 ### Supported Kubernetes Distributions
 
 This repository supports the following Kubernetes distributions:
-- k8s: The standard Kubernetes distribution.
+- `k8s`: The standard Kubernetes distribution.
 
 ### Installation Guides
 
