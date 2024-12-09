@@ -1,0 +1,6 @@
+# Ansible
+inventories/*
+!inventories/template.yaml
+
+# VS Code
+.vscode/

@@ -1,0 +1,19 @@
+---
+- name: Generate Join Command for Workers on master node
+  shell: kubeadm token create --print-join-command
+  register: join_command
+  run_once: true
+  when: ansible_host == master.ip
+
+- name: Debug join command
+  debug:
+    msg: "Join command for worker nodes: {{ join_command.stdout }}"
+  when: ansible_host != master.ip
+
+- name: Join worker nodes to Kubernetes cluster
+  command: "{{ join_command.stdout }}"
+  when: ansible_host != master.ip
+
+
+
+

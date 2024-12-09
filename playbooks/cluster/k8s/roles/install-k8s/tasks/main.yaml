@@ -1,0 +1,19 @@
+- name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
+  shell: |
+    dpkg -l | grep -qw kubeadm || apt-get install -y kubeadm
+    dpkg -l | grep -qw kubelet || apt-get install -y kubelet
+    dpkg -l | grep -qw kubectl || apt-get install -y kubectl
+  args:
+    executable: /bin/bash
+
+- name: Hold Kubernetes packages (kubeadm, kubelet, kubectl)
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubeadm
+    - kubelet
+    - kubectl
+
+- name: Apply sysctl changes
+  command: sysctl --system

@@ -1,0 +1,30 @@
+---
+- name: Remove any Kubernetes related APT source files (if any)
+  shell: |
+    rm -f /etc/apt/sources.list.d/*kubernetes* || true
+
+- name: Update apt cache
+  shell: |
+    apt-get update
+
+- name: Upgrade system packages
+  shell: |
+    apt-get upgrade -y --fix-missing
+
+- name: Change hostname
+  ansible.builtin.shell: |
+    hostnamectl set-hostname {{ item.hostname }}
+  with_items:
+    - "{{ workers }}"
+    - "{{ master }}"
+  when: inventory_hostname == item.hostname
+
+- name: Update /etc/hosts file
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ item.ip }}"
+    line: "{{ item.ip }} {{ item.hostname }}"
+  with_items:
+    - "{{ workers }}"
+    - "{{ master }}"
+

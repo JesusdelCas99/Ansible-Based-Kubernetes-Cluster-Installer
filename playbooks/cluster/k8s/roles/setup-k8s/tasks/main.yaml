@@ -1,0 +1,74 @@
+---
+- name: Install basic dependencies
+  shell: |
+    apt-get install -y curl
+    apt-get install -y ca-certificates
+    apt-get install -y gnupg
+    apt-get install -y apt-transport-https
+  args:
+
+- name: Load kernel modules
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Configure sysctl params
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
+    - { name: "net.ipv4.ip_forward", value: "1" }
+    - { name: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+
+- name: Install containerd (if not already installed)
+  shell: |
+    dpkg -l | grep -qw containerd || apt-get install -y containerd
+  args:
+    executable: /bin/bash
+
+- name: Create containerd config directory
+  shell: mkdir -p /etc/containerd
+
+- name: Configure containerd
+  shell: containerd config default > /etc/containerd/config.toml
+
+- name: Restart containerd
+  shell: systemctl restart containerd
+
+- name: Disable swap
+  shell: swapoff -a
+
+- name: Disable swap in fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+
+- name: Create keyrings directory if not present
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Remove any previous Kubernetes GPG keys from keyrings directory
+  shell: rm -f /etc/apt/keyrings/*kubernetes*
+
+- name: Download and import Kubernetes GPG key
+  ansible.builtin.shell: |
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.k8s_version }}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes APT repository
+  shell: echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.k8s_version }}/deb/ /' > /etc/apt/sources.list.d/kubernetes.list
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+
+  

@@ -1,0 +1,78 @@
+---
+- name: Stop Kubernetes services
+  service:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - kubelet
+    - containerd
+  ignore_errors: true
+
+- name: Disable Kubernetes services
+  service:
+    name: "{{ item }}"
+    enabled: no
+  loop:
+    - kubelet
+    - containerd
+  ignore_errors: true
+
+- name: Unhold Kubernetes-related packages
+  command: apt-mark unhold {{ item }}
+  loop:
+    - kubeadm
+    - kubelet
+    - kubectl
+    - containerd
+  ignore_errors: true
+
+- name: Purge Kubernetes-related packages
+  command: apt-get purge -y {{ item }}
+  loop:
+    - kubeadm
+    - kubelet
+    - kubectl
+    - containerd
+  ignore_errors: true
+
+- name: Autoremove unnecessary packages and dependencies
+  command: apt-get autoremove -y
+  ignore_errors: true
+
+- name: Remove Kubernetes-related directories
+  shell: |
+    rm -rf {{ item }} || true
+  loop:
+    - /etc/kubernetes
+    - /var/lib/etcd
+    - /etc/containerd
+    - /etc/cni/net.d
+    - /var/lib/cni
+    - /root/.kube
+    - /home/{{ ansible_user }}/.kube
+  ignore_errors: true
+
+- name: Enable swap
+  shell: swapon -a
+
+- name: Remove swap entry from /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+    state: absent
+  
+- name: Remove Kubernetes GPG keys
+  shell: rm -f /etc/apt/keyrings/*kubernetes*
+
+- name: Remove Calico network interfaces
+  shell: |
+    for iface in $(ip a | grep -o 'cali[^@]*'); do
+      ip link delete $iface;
+    done
+  ignore_errors: true
+
+- name: Restart system to apply changes
+  ansible.builtin.reboot:
+    reboot_timeout: 3600
+
+

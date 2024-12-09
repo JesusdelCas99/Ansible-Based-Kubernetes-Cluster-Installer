@@ -1,0 +1,12 @@
+---
+- name: Setup Kubernetes Cluster
+  hosts: all
+  become: true
+  vars_files:
+    - ./config/k8s-cluster.yaml
+  roles:
+    - setup-hosts
+    - setup-k8s
+    - install-k8s
+    - start-k8s
+    - join-nodes

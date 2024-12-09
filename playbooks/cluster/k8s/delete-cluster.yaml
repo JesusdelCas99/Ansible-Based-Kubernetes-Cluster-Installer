@@ -1,0 +1,9 @@
+---
+- name: Uninstall Kubernetes Cluster
+  hosts: all
+  become: true
+  vars_files:
+    - ./config/k8s-cluster.yaml
+  roles:
+    - purge-cluster
+    - purge-k8s

@@ -1,0 +1,54 @@
+---
+- name: Remove all Kubernetes resources from all namespaces
+  ansible.builtin.shell: |
+    kubectl delete {{ item }} --all --all-namespaces --force --grace-period=0 || true
+  loop:
+    - pod
+    - pvc 
+    - pv   
+    - secret
+    - configmap
+    - service
+    - endpoints
+    - deployment
+    - statefulset
+    - replicaSet
+    - daemonset
+    - job
+    - cronjob
+    - ingress
+    - serviceaccount
+    - role
+    - rolebinding
+    - clusterrole
+    - clusterrolebinding
+    - networkpolicy
+    - horizontalpodautoscaler
+    - verticalpodautoscaler
+    - limitrange
+    - resourcequota
+    - customresourcedefinition
+    - mutatingwebhookconfiguration
+    - validatingwebhookconfiguration
+    - apiservice
+    - thirdpartyresource
+    - poddisruptionbudget
+    - podsecuritypolicy
+    - lease
+    - endpointslice
+    - tokenreview
+    - localsubjectaccessreview
+    - selfsubjectaccessreview
+    - selfsubjectrulesreview
+    - subjectaccessreview
+    - binding
+    - componentstatus
+  ignore_errors: yes
+  when: ansible_host == master.ip
+
+- name: Prune containerd images
+  ignore_errors: yes
+  ansible.builtin.shell: |
+    for img in $(ctr images ls -q); do
+      ctr images rm $img;
+    done
