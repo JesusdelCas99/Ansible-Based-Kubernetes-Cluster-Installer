@@ -44,7 +44,7 @@
     - binding
     - componentstatus
   ignore_errors: yes
-  when: ansible_host == master.ip
+  when: ansible_host == hostvars['k8s-control'].ansible_host
 
 - name: Prune containerd images
   ignore_errors: yes

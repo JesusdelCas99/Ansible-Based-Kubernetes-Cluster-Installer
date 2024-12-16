@@ -13,18 +13,17 @@
 
 - name: Change hostname
   ansible.builtin.shell: |
-    hostnamectl set-hostname {{ item.hostname }}
-  with_items:
-    - "{{ workers }}"
-    - "{{ master }}"
-  when: inventory_hostname == item.hostname
+    hostnamectl set-hostname {{ hostvars[inventory_hostname].hostname }}
 
-- name: Update /etc/hosts file
+- name: Update /etc/hosts file host addresses
   ansible.builtin.lineinfile:
     path: /etc/hosts
-    regexp: "^{{ item.ip }}"
-    line: "{{ item.ip }} {{ item.hostname }}"
-  with_items:
-    - "{{ workers }}"
-    - "{{ master }}"
+    regexp: "^{{ hostvars[item].ansible_host }}"
+    line: "{{hostvars[item].ansible_host }} {{ hostvars[item].hostname }}"
+  with_items: "{{ groups['all'] }}"
 
+- name: Update /etc/hosts file host address
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "^127.0.1.1"
+    state: absent

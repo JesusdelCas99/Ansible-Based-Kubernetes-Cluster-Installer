@@ -1,28 +1,7 @@
 ---
-- name: Remove Kubernetes manifests from previous installations (if any)
-  shell: |
-    rm -f /etc/kubernetes/manifests/kube-apiserver.yaml
-    rm -f /etc/kubernetes/manifests/kube-controller-manager.yaml
-    rm -f /etc/kubernetes/manifests/kube-scheduler.yaml
-    rm -f /etc/kubernetes/manifests/etcd.yaml
-  when: ansible_host == master.ip
-  ignore_errors: true
-
-- name: Free up ports 6443, 10250, 10257, 10259, 2379
-  shell: |
-    kill -9 $(sudo lsof -t -i:6443) 2>/dev/null || true
-    kill -9 $(sudo lsof -t -i:10250) 2>/dev/null || true
-    kill -9 $(sudo lsof -t -i:10257) 2>/dev/null || true
-    kill -9 $(sudo lsof -t -i:10259) 2>/dev/null || true
-    kill -9 $(sudo lsof -t -i:2379) 2>/dev/null || true
-  ignore_errors: true
-
-- name: Run kubeadm reset on all nodes
-  command: kubeadm reset -f
-
 - name: Run kubeadm init on master node
-  command: kubeadm init --pod-network-cidr="{{ kubernetes.pod_network_cidr }}" --kubernetes-version="{{ kubernetes.k8s_version }}.0"
-  when: ansible_host == master.ip
+  command: kubeadm init --pod-network-cidr="{{ kubernetes.pod_network_cidr }}"
+  when: ansible_host == hostvars['k8s-control'].ansible_host
 
 - name: Create Kube Directories for both root and ansible user on master node
   shell: |
@@ -30,21 +9,22 @@
     mkdir -p /home/{{ ansible_user }}/.kube
     chmod 0755 /root/.kube
     chmod 0755 /home/{{ ansible_user }}/.kube
-  when: ansible_host == master.ip
+  when: ansible_host == hostvars['k8s-control'].ansible_host
 
 - name: Copy Admin.conf to Kube Config on master node for both root and ansible user
   shell: |
     cp -f /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config
     cp -f /etc/kubernetes/admin.conf /root/.kube/config
-  when: ansible_host == master.ip
+  when: ansible_host == hostvars['k8s-control'].ansible_host
 
 - name: Change Ownership of Kubeconfig on master node
   command: sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config
-  when: ansible_host == master.ip
+  when: ansible_host == hostvars['k8s-control'].ansible_host
 
-- name: Apply Calico CNI Plugin on master node
-  command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v{{ kubernetes.calico_version }}/manifests/calico.yaml
-  when: ansible_host == master.ip
+- name: Install Flannel on master node
+  ansible.builtin.command:
+    cmd: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+  when: ansible_host == hostvars['k8s-control'].ansible_host
 
 - name: Wait for control-plane to be ready
   shell: kubectl get nodes | grep 'control-plane' | grep -w 'Ready'
@@ -52,4 +32,4 @@
   until: kubectl_output.rc == 0
   retries: 30
   delay: 10
-  when: ansible_host == master.ip
+  when: ansible_host == hostvars['k8s-control'].ansible_host

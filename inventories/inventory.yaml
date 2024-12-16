@@ -1,21 +1,24 @@
 all:
   hosts:
     k8s-control:
-      ansible_host: 172.16.106.43
+      hostname: "n10.host"
+      ansible_host: 192.168.1.135
       ansible_user: kube
     k8s-worker1:
-      ansible_host: 172.16.106.112
-      ansible_user: kube
-    k8s-worker2:
-      ansible_host: 172.16.106.113
+      hostname: "n11.host"
+      ansible_host: 192.168.1.136
       ansible_user: kube
 
   children:
-    k8s-control:
+    k8s-controller:
       hosts:
         k8s-control:
     k8s-workers:
       hosts:
-        k8s-worker1:
-        k8s-worker2:
+        k8s-worker1:  
+
+  vars:
+    kubernetes:
+      k8s_version: "1.30"
+      pod_network_cidr: "10.244.0.0/16"     
 
