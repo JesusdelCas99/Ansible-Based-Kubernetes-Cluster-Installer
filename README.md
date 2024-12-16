@@ -25,7 +25,7 @@ The roles defined are:
 - `start-k8s`: Initializes the control plane on the master node and applies the Flannel network.
 - `join-nodes`: Joins the worker nodes to the Kubernetes cluster.
 - `purge-cluster`: Removes all Kubernetes resources and prunes container images.
-- `purge-k8s`: Stops and disables Kubernetes services, removes related packages, and cleans up configuration files.
+- `purge-k8s`: Stops and disables Kubernetes services, removes packages, and cleans up config files.
 
 ### Execution
 
@@ -43,7 +43,9 @@ The roles defined are:
 
 ### Configuration
 
-Before running the playbooks, make sure to update the `inventory.yaml` file to define the control plane and worker nodes, along with the corresponding Kubernetes cluster configuration for deployment. Key configuration parameters include:
+Before running the playbooks, make sure to update the `inventory.yaml` file to define the control plane and worker nodes, along with the corresponding Kubernetes cluster configuration for deployment. 
+
+Key configuration parameters include:
 
    ```
    k8s_version: "1.30"                        # Kubernetes version (includes kubelet, kubeadm, and kubectl versions)
