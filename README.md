@@ -1,4 +1,4 @@
-# Kubernetes Cluster Setup with Ansible
+# Simplifying Kubernetes Cluster Deployment: An Ansible Automation Approach
 
 This repository provides an Ansible-based solution to set up a Kubernetes cluster. The playbooks and roles included automate the installation and configuration of both control plane and worker nodes, including the setup of networking (Flannel CNI). 
 
@@ -32,13 +32,13 @@ The roles defined are:
 1. Run the `create-cluster.yaml` playbook to set up the Kubernetes cluster:
 
    ```
-   ansible-playbook -i inventories/inventory.yaml playbooks/cluster/k8s/create-cluster.yaml --ask-become-pass
+   ansible-playbook -i inventories/inventory.yaml playbooks/create-cluster.yaml --ask-become-pass
    ```
 
 2. To remove the cluster, execute the `delete-cluster.yaml` playbook:
 
    ```
-   ansible-playbook -i inventories/inventory.yaml playbooks/cluster/k8s/delete-cluster.yaml --ask-become-pass
+   ansible-playbook -i inventories/inventory.yaml playbooks/delete-cluster.yaml --ask-become-pass
    ```
 
 ### Configuration
