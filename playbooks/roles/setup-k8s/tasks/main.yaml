@@ -6,6 +6,7 @@
     apt-get install -y gnupg
     apt-get install -y apt-transport-https
   args:
+    executable: /bin/bash
 
 - name: Load kernel modules
   modprobe:
@@ -61,10 +62,10 @@
 
 - name: Download and import Kubernetes GPG key
   ansible.builtin.shell: |
-    curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.k8s_version }}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.version }}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
 - name: Add Kubernetes APT repository
-  shell: echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.k8s_version }}/deb/ /' > /etc/apt/sources.list.d/kubernetes.list
+  shell: echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.version }}/deb/ /' > /etc/apt/sources.list.d/kubernetes.list
 
 - name: Update apt cache
   apt:

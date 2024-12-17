@@ -19,6 +19,8 @@ all:
 
   vars:
     kubernetes:
-      k8s_version: "1.30"
-      pod_network_cidr: "10.244.0.0/16"     
+      version: "1.30"
+      pod_network_cidr: "10.244.0.0/16"   
+    flannel:
+      version: "0.25.7"  
 
