@@ -1,12 +1,9 @@
 ---
-- name: Install basic dependencies
-  shell: |
-    apt-get install -y curl
-    apt-get install -y ca-certificates
-    apt-get install -y gnupg
-    apt-get install -y apt-transport-https
-  args:
-    executable: /bin/bash
+- name: Disable swap
+  shell: swapoff -a
+
+- name: Disable swap in fstab
+  shell: sed "-i.bak" '/swap/d' /etc/fstab
 
 - name: Load kernel modules
   modprobe:
@@ -16,56 +13,77 @@
     - overlay
     - br_netfilter
 
-- name: Configure sysctl params
-  sysctl:
-    name: "{{ item.name }}"
-    value: "{{ item.value }}"
-    state: present
-    reload: yes
-  loop:
-    - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
-    - { name: "net.ipv4.ip_forward", value: "1" }
-    - { name: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+- name: Persist kernel module loading at boot
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+    owner: root
+    group: root
+    mode: '0644'
 
-- name: Install containerd (if not already installed)
+- name: Configure sysctl parameters
+  copy:
+    dest: /etc/sysctl.d/k8s.conf
+    content: |
+      net.bridge.bridge-nf-call-iptables = 1
+      net.ipv4.ip_forward = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Reload sysctl parameters
+  command: sysctl --system
+
+- name: Install basic dependencies
   shell: |
-    dpkg -l | grep -qw containerd || apt-get install -y containerd
-  args:
-    executable: /bin/bash
+    apt-get install -y curl
+    apt-get install -y  software-properties-common
+    apt-get install -y ca-certificates
+    apt-get install -y gnupg
+    apt-get install -y apt-transport-https
 
-- name: Create containerd config directory
-  shell: mkdir -p /etc/containerd
+- name: Add Docker GPG key
+  ansible.builtin.shell: |
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+    sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/docker.gpg
 
-- name: Configure containerd
-  shell: containerd config default > /etc/containerd/config.toml
+- name: Add Docker repository to APT sources
+  ansible.builtin.shell: |
+    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -sc) stable" | \
+    tee /etc/apt/sources.list.d/docker-ce.list
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install containerd
+  command: apt install -y containerd.io
+
+- name: Configure cgroup driver for containerd
+  ansible.builtin.shell: |
+    [ -d /etc/containerd ] || mkdir /etc/containerd
+    containerd config default | tee /etc/containerd/config.toml
+    sed -i '/SystemdCgroup/s/false/true/' /etc/containerd/config.toml
+
+- name: Start and enable containerd to run on system boot
+  command: systemctl enable --now containerd
 
 - name: Restart containerd
-  shell: systemctl restart containerd
+  command: systemctl restart containerd
 
-- name: Disable swap
-  shell: swapoff -a
-
-- name: Disable swap in fstab
-  replace:
-    path: /etc/fstab
-    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
-    replace: '# \1'
-
-- name: Create keyrings directory if not present
-  file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
-
-- name: Remove any previous Kubernetes GPG keys from keyrings directory
-  shell: rm -f /etc/apt/keyrings/*kubernetes*
+- name: Install Kubernetes repository GPG signing key
+  command: sudo apt install gnupg2 -y
 
 - name: Download and import Kubernetes GPG key
   ansible.builtin.shell: |
-    curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.version }}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.k8s_version }}/deb/Release.key | gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/k8s.gpg
 
-- name: Add Kubernetes APT repository
-  shell: echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.version }}/deb/ /' > /etc/apt/sources.list.d/kubernetes.list
+- name: Add Kubernetes package repository to APT sources
+  ansible.builtin.shell: |
+    echo "deb https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.k8s_version }}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 - name: Update apt cache
   apt:

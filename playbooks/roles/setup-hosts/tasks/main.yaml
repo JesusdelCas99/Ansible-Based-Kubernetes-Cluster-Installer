@@ -1,8 +1,4 @@
 ---
-- name: Remove any Kubernetes related APT source files (if any)
-  shell: |
-    rm -f /etc/apt/sources.list.d/*kubernetes* || true
-
 - name: Update apt cache
   shell: |
     apt-get update
@@ -21,9 +17,3 @@
     regexp: "^{{ hostvars[item].ansible_host }}"
     line: "{{hostvars[item].ansible_host }} {{ hostvars[item].hostname }}"
   with_items: "{{ groups['all'] }}"
-
-- name: Update /etc/hosts file host address
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "^127.0.1.1"
-    state: absent
