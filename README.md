@@ -1,4 +1,4 @@
-# Simplifying Kubernetes Cluster Deployment: An Ansible Automation Approach
+# Kubernetes Cluster Setup with Ansible
 
 This repository provides an Ansible-based solution to set up a Kubernetes cluster. The playbooks and roles included automate the installation and configuration of both control plane and worker nodes, including the setup of networking (Flannel CNI). 
 
